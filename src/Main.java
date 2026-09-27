@@ -50,7 +50,7 @@ public class Main {
                 new RegistroTransporte("U008", "R01", "Centro", "entrada",
                         LocalDateTime.of(2026, 9, 26, 11, 00)));
 
-        long umbralSobrecarga = 1;
+        long umbralSobrecarga = 3;
         InformeDiario informe = ProcesadorTransporte.generarInformeDiario(
                 registros, umbralSobrecarga);
 
