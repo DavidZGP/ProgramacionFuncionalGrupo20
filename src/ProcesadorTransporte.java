@@ -49,12 +49,16 @@ public final class ProcesadorTransporte {
     // b) Identificación de horas pico
 
     // Agrupa todos los registros (entradas y salidas) por hora del día
-    public static Map<Integer, Long> contarRegistrosPorHora(List<RegistroTransporte> registros) {
-        return registros.stream()
-                .collect(Collectors.groupingBy(
-                        r -> r.timestamp().getHour(),
-                        Collectors.counting()));
-    }
+    public static Map<Integer, Long> contarRegistrosPorHora(
+        List<RegistroTransporte> registros) {
+
+    return registros.stream()
+            .collect(Collectors.collectingAndThen(
+                    Collectors.groupingBy(
+                            r -> r.timestamp().getHour(),
+                            Collectors.counting()),
+                    Map::copyOf));
+}
 
     // A partir del conteo por hora, determina la hora pico.
     // Recibe el resultado de contarRegistrosPorHora,
