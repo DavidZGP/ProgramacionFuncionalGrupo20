@@ -37,11 +37,15 @@ public final class ProcesadorTransporte {
 
     public static Map<String, Long> calcularAfluenciaPorEstacion(List<RegistroTransporte> registros) {
         return registros.stream()
-
-                .filter(r -> "entrada".equals(r.accion()))
-                .collect(Collectors.groupingBy(
-                        RegistroTransporte::estacion,
-                        Collectors.counting()));
+        .filter(r -> "entrada".equals(r.accion()))
+        .collect(Collectors.groupingBy(
+                RegistroTransporte::estacion,
+                Collectors.counting()))
+        .entrySet()
+        .stream()
+        .collect(Collectors.toUnmodifiableMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue));
     }
 
     // b) Identificación de horas pico
