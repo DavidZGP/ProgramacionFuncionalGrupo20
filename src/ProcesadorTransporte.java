@@ -1,4 +1,5 @@
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -6,25 +7,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * // Módulo funcional de procesamiento y agregación de datos diarios
- *
- * Principios aplicados en TODA la clase:
- * - Funciones puras: cada método solo depende de sus argumentos y siempre
- * devuelve el mismo resultado para la misma entrada. Ninguno modifica
- * el List<RegistroTransporte> recibido ni ningún estado externo/estático.
- * - Inmutabilidad: las listas y mapas de entrada NUNCA se alteran; los
- * resultados se devuelven en colecciones inmutables
- * (Collectors.toUnmodifiableXxx / List.copyOf), de modo que quien las
- * reciba tampoco pueda mutarlas por accidente.
- * - Programación declarativa: no hay bucles for/while ni contadores
- * mutables; todo se expresa como pipelines de Stream (filter, map,
- * groupingBy, reduce, sorted, collect...).
- * - Paralelización: como no hay estado compartido mutable ni efectos
- * secundarios, cualquier stream() de este archivo puede cambiarse por
- * parallelStream() sin alterar el resultado (ver comentario en
- * calcularAfluenciaPorEstacion).
- */
 public final class ProcesadorTransporte {
 
     // Clase de utilidades: no debe instanciarse.
@@ -37,11 +19,12 @@ public final class ProcesadorTransporte {
 
     public static Map<String, Long> calcularAfluenciaPorEstacion(List<RegistroTransporte> registros) {
         return registros.stream()
-
                 .filter(r -> "entrada".equals(r.accion()))
-                .collect(Collectors.groupingBy(
-                        RegistroTransporte::estacion,
-                        Collectors.counting()));
+                .collect(Collectors.collectingAndThen(
+                        Collectors.groupingBy(
+                                RegistroTransporte::estacion,
+                                Collectors.counting()),
+                        Map::copyOf));
     }
 
     // b) Identificación de horas pico
@@ -49,9 +32,11 @@ public final class ProcesadorTransporte {
     // Agrupa todos los registros (entradas y salidas) por hora del día
     public static Map<Integer, Long> contarRegistrosPorHora(List<RegistroTransporte> registros) {
         return registros.stream()
-                .collect(Collectors.groupingBy(
-                        r -> r.timestamp().getHour(),
-                        Collectors.counting()));
+                .collect(Collectors.collectingAndThen(
+                        Collectors.groupingBy(
+                                r -> r.timestamp().getHour(),
+                                Collectors.counting()),
+                        Map::copyOf));
     }
 
     // A partir del conteo por hora, determina la hora pico.
@@ -74,11 +59,10 @@ public final class ProcesadorTransporte {
                         RegistroTransporte::ruta,
                         Collectors.counting()));
 
-        List<Map.Entry<String, Long>> ordenado = conteoPorRuta.entrySet().stream()
+        return conteoPorRuta.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .collect(Collectors.toList());
-
-        return List.copyOf(ordenado);
+                .map(entry -> Map.entry(entry.getKey(), entry.getValue()))
+                .toList();
     }
 
     // d) Patrones de viaje por usuario
@@ -87,17 +71,16 @@ public final class ProcesadorTransporte {
     // orden cronológico en que ocurrieron sus registros.
 
     public static Map<String, List<String>> generarPatronesDeViaje(List<RegistroTransporte> registros) {
-        Map<String, List<String>> patrones = registros.stream()
+        return registros.stream()
                 .sorted(Comparator.comparing(RegistroTransporte::timestamp))
-                .collect(Collectors.groupingBy(
-                        RegistroTransporte::idUsuario,
-                        LinkedHashMap::new,
-                        Collectors.mapping(RegistroTransporte::estacion, Collectors.toList())));
-
-        // Se devuelve un mapa inmutable, y cada lista interna también inmutable.
-        Map<String, List<String>> inmutable = new LinkedHashMap<>();
-        patrones.forEach((usuario, estaciones) -> inmutable.put(usuario, List.copyOf(estaciones)));
-        return java.util.Collections.unmodifiableMap(inmutable);
+                .collect(Collectors.collectingAndThen(
+                        Collectors.groupingBy(
+                                RegistroTransporte::idUsuario,
+                                LinkedHashMap::new,
+                                Collectors.mapping(
+                                        RegistroTransporte::estacion,
+                                        Collectors.toUnmodifiableList())),
+                        Collections::unmodifiableMap));
     }
     // e) Cálculo de tiempo promedio entre estaciones
 
