@@ -9,7 +9,7 @@ public final class RegistroTransporte {
     private final LocalDateTime timestamp;
 
     public RegistroTransporte(String idUsuario, String ruta, String estacion,
-                            String accion, LocalDateTime timestamp) {
+            String accion, LocalDateTime timestamp) {
         this.idUsuario = idUsuario;
         this.ruta = ruta;
         this.estacion = estacion;
@@ -34,6 +34,26 @@ public final class RegistroTransporte {
     }
 
     public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public String idUsuario() {
+        return idUsuario;
+    }
+
+    public String ruta() {
+        return ruta;
+    }
+
+    public String estacion() {
+        return estacion;
+    }
+
+    public String accion() {
+        return accion;
+    }
+
+    public LocalDateTime timestamp() {
         return timestamp;
     }
 
